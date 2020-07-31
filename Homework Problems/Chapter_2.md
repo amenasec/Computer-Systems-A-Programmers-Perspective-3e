@@ -177,10 +177,13 @@ The procedure `replace_byte` above works as follows. First, we check that argume
 ### 2.61 ⬥⬥
 Write C expressions that evaluate to `1` when the following conditions are true and to `0` when they are false. Assume `x` is of type `int`.
 
-A. Any bit of `x` equals 1. </br>
-B. Any bit of `x` equals 0. </br>
-C. Any bit in the least significant byte of `x` equals `1`. </br>
-D. Any bit in the most significant byte of `x` equals `0`. </br>
+**A.** Any bit of `x` equals 1.
+
+**B.** Any bit of `x` equals 0.
+
+**C.** Any bit in the least significant byte of `x` equals `1`.
+
+**D.** Any bit in the most significant byte of `x` equals `0`.
 
 Your code should follow the bit-level integer coding rules (page 128), with the additional restriction that you may not use equality (`==`) or inequality (`!=`) tests.
 
@@ -383,9 +386,11 @@ When compiled and run on a 32-bit SUN SPARC, however, this procedure returns `0`
 ````
 warning: left shift count >= width of type
 ````
-A. In what way does our code fail to comply with the C standard? </br>
-B. Modify the code to run properly on any machine for which data type `int` is at least 32 bits. </br>
-C. Modify the code to run properly on any machine for which data type int is at least 16 bits.
+**A.** In what way does our code fail to comply with the C standard?
+
+**B.** Modify the code to run properly on any machine for which data type `int` is at least 32 bits.
+
+**C.** Modify the code to run properly on any machine for which data type int is at least 16 bits.
 
 ---
 
@@ -526,8 +531,9 @@ int xbyte(packed_t word, int bytenum) {
 }
 ````
 
-A. What is wrong with this code? </br>
-B. Give a correct implementation of the function that uses only left and right shifts, along with one subtraction.
+**A.** What is wrong with this code?
+
+**B.** Give a correct implementation of the function that uses only left and right shifts, along with one subtraction.
 
 ---
 **A.** What is wrong with this code?
@@ -568,9 +574,9 @@ This code makes use of the library function `memcpy`. Although its use is a bit 
 
 You carefully test the code and discover that it always copies the value to the buffer, even when `maxbytes` is too small.
 
-A. Explain why the conditional test in the code always succeeds. *Hint*: The `sizeof` operator returns a value of type `size_t`.
+**A.** Explain why the conditional test in the code always succeeds. *Hint*: The `sizeof` operator returns a value of type `size_t`.
 
-B. Show how you can rewrite the conditional test to make it work properly.
+**B.** Show how you can rewrite the conditional test to make it work properly.
 
 ---
 
@@ -648,3 +654,360 @@ int tsub_ok(int x, int y) {
 The function `tsub_ok` works as follows. First, we calculate the difference `x - y`. Next, we check if a positive overflow has occurred or if a negative underflow has occurred. A positive overflow occurs when `x > 0` and `y < 0`, but `dif < 0`. These inequalities are all checked in the expression `(x > 0) && (y < 0) && (dif < 0)`. A negative underflow occurs when `x < 0` and `y > 0`, but `dif > 0`. These inequalities are all checked in the expression `(x < 0) && (y > 0) && (dif > 0)`. Finally, if either positive overflow or negative underflow has occurred, the expression `!overflow_flag && !underflow_flag` will evaluate to `1`, and `0` otherwise.
 
 ----
+
+
+### 2.75 ⬥⬥⬥
+SUppose we want to compute the complete `2ω`-bit representation of `x • y`, where both `x` and `y` are unsigned, on a machine for which data type `unsigned` is `ω` bits. The low-order `ω` bits of the product can be computed with the expression `x*y`, so we only require a procedure with prototype:
+````C
+unsigned unsigned_high_prod(unsigned x, unsigned y);
+````
+that computes the high-order `ω` bits of `x • y` for unsigned variables.
+
+We have access to a library function with prototype:
+````C
+int signed_high_prod(int x, int y);
+````
+that computes the high-order `ω` bits of `x • y` for the case where `x` and `y` are in two's-complement form. Write code calling this procedure to implement the function for unsigned arguments. Justify the correctness of your solution.
+
+*Hint*: Look at the relationship between the signed product `x•y` and the unsigned product `x' • y'` in the derivation of Equation 2.18.
+
+---
+
+````C
+unsigned unsigned_high_prod(unsigned x, unsigned y) {
+  int w = sizeof(unsigned) << 3;
+
+  int x_sign = x >> w;
+  int y_sign = y >> w;
+
+  int high_signed_prod = signed_high_prod(x, y);
+
+  return high_signed_prod + (x_sign * y) + (y_sign * x);
+}
+````
+
+The function `unsigned_high_prod` works as follows. We first get the word size with the expression `sizeof(unsigned) << 3`. Note that the `sizeof` function returns the number of bytes, so we must left shift by `3` to get the number of bits. Next we get the most significant bit of both `x` and `y`, which will be used when they are treated as signed `int` types and we need to know the sign. Next we use the function `signed_high_prod` which is in a library we have access to which computes the `ω` most significant bits of `x • y` where both `x` and `y` are treated as type `int`. But then as shown in the derivation of Equation 2.18, we must also add the terms `x_sign * y`, `y_sign * x`, and `(x_sign * y_sign)2^w`. However, the term `(x_sign * y_sign)2^w` will either equal `0` or overflow, so we can disregard this term. Hence, we return the expression `high_signed_prod + (x_sign * y) + (y_sign * x)`.
+
+---
+
+### 2.76 ⬥
+The library function `calloc` has the following declaration:
+````C
+void *calloc(size_t nmemb, size_t size);
+````
+According to the library documentation, "The `calloc` function allocates memory for an array of `nmeb` elements of `size` bytes each. The memory is set to zero. If `nmeb` or `size` is zero, then `calloc` returns `NULL`."
+
+Write an implementation of `calloc` that performs the allocation by a call to `malloc` and sets the memory to zero via `memset`. Your code should not have any vulnerabilities due to arithmetic overflow, and it should work correctly regardless of the number of bits used to represent data of type `size_t`.
+
+As a reference, functions `malloc` and `memset` have the following declarations:
+````C
+void *malloc(size_t size);
+void *memset(void *s, int c, size_t n);
+````
+
+---
+
+````C
+void *calloc(size_t nmemb, size_t size) {
+  if(nmemb == 0 || size == 0) {
+    return NULL;
+  }
+
+  size_t buf_size = nmemb * size;
+  // Check for overflow
+  if(buf_size/nmemb == size) {
+    void * buf = malloc(buf_size);
+    if(buf != NULL) {
+      memset(buf, 0, buff_size);
+    }
+
+    return buf;
+  }
+
+  return NULL;
+}
+````
+
+The function `calloc` works as follows. First, we check that `nmemb` and `size` are not equal to `0`. Otherwise, we return `NULL`. Next we calculate the size our memory buffer will need to be with the expression `nmemb * size`. To ensure that this multiplication operation has not resulted in an overflow, we check that `buf_size/nmemb == size`. Then we allocate memory with `malloc(buf_size)` and zero out the memory with `memset(buf, 0, buff_size)`. Lastly, we return the buffer.
+
+---
+
+
+### 2.77 ⬥⬥
+Suppose we are given the task of generating code to multiply integer variable `x` by various different factors `K`. To be efficient, we want to use only the operations `+`, `-`, and `<<`. For the following values of `K`, write C expressions to perform the multiplication using at most three operations per expression.
+
+**A.** `K = 17`
+
+**B.** `K = -7`
+
+**C.** `K = 60`
+
+**D.** `K = -112`
+
+---
+
+**A.** `K = 17`
+````C
+x + (x << 4)
+````
+
+**B.** `K = -7`
+````C
+x - (x << 3)
+````
+
+**C.** `K = 60`
+````C
+(x << 6) - (x << 2)
+````
+
+**D.** `K = -112`
+````C
+(x << 4) - (x << 7)
+````
+
+---
+
+
+### 2.78 ⬥⬥
+Write code for a function with the following prototype:
+````C
+/* Divide bypower of 2. Assume 0 <= k <= w-1 */
+int divide_power2(int x, int k);
+````
+The function should compute `x/2^k` with correct rounding, and it should follow the bit-level integer coding rules (page 128).
+
+---
+
+````C
+int divide_power2(int x, int k) {
+  int neg_flag = x & INT_MIN;
+  neg_flag && (x = (x + (1 << k) - 1));
+
+  return x >> k;
+}
+````
+
+As described in the text, integer division always rounds towards zero. Therefore, if `x >= 0`, then the expression `x >> k` will compute `x/2^k` with correct rounding. The principle of two's complement division by a power of 2, rounding down, is stated and derived on page 105 of the text. Conversely, if `x < 0`, then the expression `(x + (1 << k) - 1) >> k` will compute `x/2^k` with correct rounding. The principle of two's complement division by a power of 2, rounding up, is stated and derived on page 106 of the text.
+
+The function `divide_power2` works as follows. First, we set `neg_flag` to flag whether `x` is negative. Note that `INT_MIN` is represented by a single `1` bit in the most significant bit position in two's complement. Hence, the bitwise AND operation `x & INT_MIN` will return `INT_MIN` if `x < 0` and `0` otherwise. Next, we exploit the short circuit evaluation of conditionals in C, since we are not allowed to use `if` statements. If `neg_flag = 1`, then the expression `x = (x + (1 << k) >> 1))` will be executed which sets `x` according to the principle of two's complement division by a power of 2, rounding down, described above. If `neg_flag = 0`, then the expression `x = (x + (1 << k) >> 1))` will be skipped. Lastly, we return the expression `x >> k`, where `x` has been set according to if it is negative or nonnegative.
+
+---
+
+
+### 2.79 ⬥⬥
+Write code for a function `mul3div4` that, for integer argument `x`, computes `3*x/4` but follows the bit-level integer coding rules (page 128). Your code should replicate the fact that the computation `3*x` can cause overflow.
+
+---
+
+````C
+// From homework problem 2.78
+int divide_power2(int x, int k) {
+  int neg_flag = x & INT_MIN;
+  neg_flag && (x = (x + (1 << k) - 1));
+
+  return x >> k;
+}
+
+int mul3div4(int x) {
+  int prod = (x << 1) + x;
+  return divide_power2(prod, 2);
+}
+````
+
+The function `mul3div4` makes use of the function `divide_power2` from homework problem 2.78 above. First, we calculate the product `x * 3` with the expression `(x << 1) + x`. Lastly, we return the expression `divide_power2(prod, 2)` which will calculate the quotient `prod / 4`. Hence the code computes `3*x/4` and replicates the fact that the computation `3*x` can cause overflow.
+
+---
+
+
+### 2.80 ⬥⬥
+Write code for a function `threefourths` that, for integer argument `x`, computes the value of `(3/4)x` rounded toward zero. It should not overflow. Your function should follow the bit-level integer coding rules (page 128).
+
+---
+
+````C
+int threefourths(int x) {
+  int neg_flag = x & INT_MIN;
+
+  // Split x into 2 least significant bits and w-2 most significant bits
+  int least = x & 0x3;
+  int most = x & ~0x3;
+
+  // For least significant bits, perform multiplication, then division
+  least = (least << 1) + least;
+  int bias = (1 << 2) - 1;
+  (neg_flag && (least += bias));
+  least = least >> 2;
+
+  // For most significant bits, perform division, then multiplication
+  most = most >> 2;
+  most = (most << 1) + most;
+
+  return most + least;
+}
+````
+
+Since our function `threefourths` should not overflow, we must first divide `x` by `4` and then multiply by `3`. This ensures that no overflow will take place, however, we must be careful that the rounding from the division operation does not affect the rounding over both operations. For example, consider the following code that makes use of the function `divide_power2` from homework problem 2.78 above.
+````C
+int wrong_threefourths(int x) {
+  int quo = divide_power2(x, 2);
+  return (quo << 1) + quo;
+}
+````
+In `wrong_threefourths`, we divide first and then multiply, so not overflow occurs. However, the rounding from the operation `x >> 2` can cause incorrect results over the entire calculation. Consider the case when `x = 10`. It is clear that the result, rounded toward zero, should be `7`. However, `10 >> 2 = 2` and therefore `(2 << 1) + 2 = 6`. Note that this rounding issue does not occur when we multiply by `3` first and then divide by `4`.
+
+When dividing by `4`, the rounding issue arises from losing the two least significant bits from right shifting. When multiplying by `3`, our overflow issue arises from the most significant bits.Therefore, to overcome both of the problems, we can split `x` into most and least significant bits. Then we can perform the division first on the most significant bits and we can perform the multiplication first on the least significant bits. Finally we add both results back together. By doing this we are guarantee that overflow does not occur and no rounding issues occur.
+
+The function `threefourths` works as follows. First, we set `neg_flag` to flag whether `x` is negative. Note that `INT_MIN` is represented by a single `1` bit in the most significant bit position in two's complement. Hence, the bitwise AND operation `x & INT_MIN` will return `INT_MIN` if `x < 0` and `0` otherwise. Next, we split `x` into the two least significant bits with the expression `x & 0x3` and the `ω - 2` most significant bits with the expression `x & ~0x3`. Next, we multiply the least significant bits by `3` with the expression `(least << 1) + least` and then we divide by `4` with the expression `least >> 2`. If `x < 0`, then we must add the bias `(1 << k) - 1`, in this case `(1 << 2) - 1 = 3` to these bits before the division operation. See the principle for two's complement division by a power of 2, round up, on page 1-6 of the text for this derivation. For the most significant bits, we divide by `4` with the expression `most >> 2` and then multiply by `3` with the expression `(most << 1) + most`. Note that we do not have to add a bias before we divide for the most significant bits if `x < 0` because it has already been added to the least significant bits. Lastly, we add the least and most significant bits back together with the expression `most + least` and return.
+
+---
+
+
+### 2.81 ⬥⬥
+Write C expressions to generate the bit patterns that follow, where `a^k` represents `k` repetitions of symbol `a`. Assume a `ω`-bit data type. Your code may contain references to parameters `j` and `k`, representing the values of `j` and `k`, but not a parameter representing `ω`.
+
+**A.** 1^{w-k}0^k
+
+**B.** 0^{w-k-j}1^k0^j
+
+---
+
+**A.** 1^{w-k}0^k
+````C
+-1 << k
+````
+
+**B.** 0^{w-k-j}1^k0^j
+````C
+~(-1 << k) << j
+````
+
+---
+
+
+### 2.82 ⬥⬥
+We are running programs where values of type `int` are 32 bits. They are represented in two's complement, and they are right shifted arithmetically. Values of type `unsigned` are also 32 bits.
+
+We generate arbitrary values `x` and `y`, and convert them to unsigned values as follows:
+````C
+/* Create some arbitrary values */
+int x = random();
+int y = random();
+/* Convert to unsigned */
+unsigned ux = (unsigned) x;
+unsigned uy = (unsigned) y;
+````
+
+For each of the following C expressions, you are to indicate wherever or not the expression *always* yields `1`. If it always yields `1`, describe the underlying mathematical principles. Otherwise, give an example of arguments that make it yield `0`.
+
+**A.** `(x<y) == (-x>-y)`
+
+**B.** `((x+y)<<4) + y-x == 17*y+15*x`
+
+**C.** `~x+~y+1 == ~(x+y)`
+
+**D.** `(ux-uy) == -(unsigned)(y-x)`
+
+**E.** `((x >> 2) << 2) <= x`
+
+---
+
+**A.** `(x<y) == (-x>-y)`
+
+This expression will not always yield `1`. Consider the case where `x = TMin` and `y = 0`. Clearly `x = TMin < 0 = y`. However, `-x = -TMin = TMin < 0 = -0 = y`. Hence, the expression yields `0`.
+
+**B.** `((x+y)<<4) + y-x == 17*y+15*x`
+
+This expression will always yield `1`. Observe that `((x+y)<<4) + y-x = 16(x+y) + y-x = 17*y+15*x`.
+
+**C.** `~x+~y+1 == ~(x+y)`
+
+This expression will always yield `1`. Observe that `~x+~y+1 = (~x+1) + (~y+1) - 1 = -x - y - 1 = -(x+y) - 1 = ~(x+y)+1 - 1 = ~(x+y)`.
+
+**D.** `(ux-uy) == -(unsigned)(y-x)`
+
+This expression will always yield `1`. Observe that `(ux-uy) = ((unsigned) x - (unsigned) y) = (unsigned)(x-y) = -(unsigned)(y-x)`.
+
+
+**E.** `((x >> 2) << 2) <= x`
+
+This expression will always yield `1`. Observe that right shifting by `2` and then left shifting by `2` will essentially zero out the two least significant bits. If these two bits equaled `0` originally, then `((x >>2) << 2) = x`. However, if either or both of these bits equaled `1`, then `((x >> 2) << 2) < x`, since we assume type `int` is 32 bits and therefore the most significant bit, responsible for making an `int` negative would remain unchanged, and losing either of the two least significant bits would cause value to be lost.
+
+---
+
+
+### 2.83 ⬥⬥
+Consider numbers having a binary representation consisting of an infinite string of the form `0,y,y,y,y,y,y...`, where `y` is a k-bit sequence. For example, the binary representation of `1/3` is `0.01010101...` (`y=01`), while the representation of `1/5` is `0.001100110011...` (`y=0011`).
+
+**A.** Let `Y = B2U_k(y)`, that is, the number having binary representation `y`. Give a formula in terms of `Y` and `k` for the value represented by the infinite string. *Hint*: Consider the effect of shifting the binary point `k` positions to the right.
+
+**B.** What is the numeric value of the string for the following values of `y`? </br>
+(a) `101` </br>
+(b) `0110` </br>
+(c) `010011`
+
+---
+
+**A.** Let `Y = B2U_k(y)`, that is, the number having binary representation `y`. Give a formula in terms of `Y` and `k` for the value represented by the infinite string. *Hint*: Consider the effect of shifting the binary point `k` positions to the right.
+
+````C
+0.yyyyyy = Y / (2^k - 1)
+````
+Observe that `0.yyyyyy... << k = y.yyyyyy.... = Y + 0.yyyyyy`. Then we have that `0.yyyyyy... << k = 0.yyyyyy * 2^k = Y + 0.yyyyyy`. Hence, we get the formula `0.yyyyyy = Y / (2^k - 1)`.
+
+**B.** What is the numeric value of the string for the following values of `y`? </br>
+(a) `101`
+
+It is clear that `Y = 0b101` and `k = 3`. Then, using the formula derived in part a above, we get that `0b101 / (2^3-1) = 5/7`. Thus, `y = 5/7`.
+
+
+(b) `0110`
+
+It is clear that `Y = 0b0110` and `k = 4`. Then, using the formula derived in part a above, we get that `0b0110 / (2^4-1) = 6/15 = 2/5`. Thus, `y = 2/5`.
+
+(c) `010011`
+
+It is clear that `Y = 0b010011` and `k = 6`. Then, using our formula derived in part a above, we get that `0b010011 / (2^6-1) = 19/63`. Thus, `y = 19/63`.
+
+---
+
+
+### 2.84 ⬥⬥
+Fill in the return value for the following procedure, which tests whether its first argument is less than or equal to its second. Assume the function `f2u` returns an unsigned 32-bit number having the same bit representation as its floating-point argument. You can assume that neither argument is `NaN`. The two flavors of zero, `+0` and `-0` are considered equal.
+
+````C
+int float_le(float x, float y) {
+  unsigned ux = f2u(x);
+  unsigned uy = f2u(y);
+
+  // Get the sign bits
+  unsigned sx = ux >> 31;
+  unsigned sy = uy >> 31;
+
+  // Give an expression using only ux, uy, sx, and sy
+  return             ;
+}
+````
+
+---
+
+````C
+int float_le(float x, float y) {
+  unsigned ux = f2u(x);
+  unsigned uy = f2u(y);
+
+  // Get the sign bits
+  unsigned sx = ux >> 31;
+  unsigned sy = uy >> 31;
+
+  // Give an expression using only ux, uy, sx, and sy
+  return (ux << 1 == 0 && uy << 1 == 0) ||    // If ux = uy = +/-0
+         (sx && !sy) ||                       // If x<0 and y>0
+         (sx && sy && ux >= uy) ||            // If x<0, y<0, and x<=y
+         (!sx && !sy && ux <= uy);            // If x>0, y>0, and x<=y
+}
+````
+
+There are four cases where `x ≤ y`. From the problem, we know that two flavors of zero, `+0` and `-0` are considered equal. The expression `ux << 1 == 0 && uy << 1 == 0` will evaluate to `1` if and only if `x = +/-0` and `x = +/-0`. The next case is when `x < 0` and `y > 0`. For this case, we can simply check that the sign of `x` equals `1` and the sign of `y` equals `0` with the expression `sx && !sy`. The third case occurs when `x < 0`, `y < 0`, and `x ≤ y`. We can check that both `x < 0` and `y < 0` using the sign bits, but then we must check that `ux ≥ uy`, since treating these numbers as unsigned will flip the inequality, using the expression `sx && sy && ux >= uy`. The last case is when `x > 0`, `y > 0`, and `x ≤ y`. Similarly, we can check that both `x > 0` and `y > 0` using the sign bits and then check that `x ≤ y` with the expression `!sx && !sy && ux <= uy`.
+
+---
